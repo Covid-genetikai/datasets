@@ -3,3 +3,4 @@ ncbi/genomic.fna
 ncbi/ncbi.json
 ncbi/ncbi.sqlite
 ncbi/ncbi.csv
+ncbi/protein.faa
