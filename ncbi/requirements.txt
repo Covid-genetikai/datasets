@@ -1,0 +1,3 @@
+pandas
+numpy
+fastaparser==1.1
