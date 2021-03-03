@@ -5,3 +5,5 @@ ncbi/ncbi.sqlite
 ncbi/ncbi.csv
 ncbi/protein.faa
 **/*.ipynb_checkpoints/*
+gisaid/metadata_2021-03-01_09-16.tsv
+gisaid/ncov_global.json
