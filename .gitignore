@@ -7,3 +7,5 @@ ncbi/protein.faa
 **/*.ipynb_checkpoints/*
 gisaid/metadata_2021-03-01_09-16.tsv
 gisaid/ncov_global.json
+ncbi/genomic.csv
+ncbi/protein.csv
