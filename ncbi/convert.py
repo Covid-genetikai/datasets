@@ -18,9 +18,11 @@ GENOMIC_NUCLEOTIDE_CSV = "genomic.csv"
 PROTEIN_FASTA = "protein.faa"
 PROTEIN_CSV = "protein.csv"
 
-SGENE_SYNONIMS = ["spike glycoprotein", "surface glycoprotein", "spike", "surface"]
+SGENE_SYNONIMS = ["spike glycoprotein",
+                  "surface glycoprotein", "spike", "surface"]
 
 DEBUG = False
+
 
 class NCBIMetadataParser:
 
@@ -116,6 +118,7 @@ def parse_metadata():
 
     return metadata
 
+
 def parse_genomic_nucleotide_fasta():
     """ Reads genomic data and returns dict
 
@@ -136,11 +139,11 @@ def parse_genomic_nucleotide_fasta():
             if '>' in line:
                 if sequence and accession:
                     data[accession] = {
-                        "sequence": "".join(sequence),
-                        "description": description
+                        "genome": "".join(sequence),
+                        "genome_desc": description
                     }
 
-                parts = line.split(":", 1)
+                parts = line.split(" ")
                 accession = parts[0][1:]
                 description = " ".join(parts[1:])
 
@@ -173,13 +176,13 @@ def parse_protein_fasta():
 
                 if sequence and accession:
                     data[accession] = {
-                        "sequence": "".join(sequence),
-                        "description": description
+                        "protein": "".join(sequence),
+                        "protein_desc": description
                     }
 
                 sequence = []
                 sequence_started = any(syn in line for syn in SGENE_SYNONIMS)
-                parts = line.split(":", 1)
+                parts = line.split(":")
                 accession = parts[0][1:]
                 description = " ".join(parts[1:])
             else:
@@ -187,11 +190,13 @@ def parse_protein_fasta():
                     sequence.append(line.strip())
     return data
 
+
 def dict_to_df(data):
     df = pd.DataFrame.from_dict(data, orient='index')
     df.insert(0, 'accession', df.index)
     df = df.reset_index(drop=True)
     return df
+
 
 def main():
 
@@ -201,7 +206,6 @@ def main():
     dfm = dict_to_df(metadata)
     dfm.to_csv(METADATA_CSV, index=False)
     print(f"Wrote to {METADATA_CSV}")
-
 
     genomic = parse_genomic_nucleotide_fasta()
     dfg = dict_to_df(genomic)

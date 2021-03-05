@@ -1,240 +1,82 @@
 """
-This script parses metadata, genome and protein files. Outputs csv file
-containing following columns:
-
-- accesion (str) - ID 
-- sgene_begin (int) - whene sgene begins in full genome. **FASTA format starts from 1**
-- sgene_end (int) - where sgene ends in full genome
-- sgene_nucleotide (str) - sgene cut from full genome
-- collection date (str) - when sample was collected. **Date format is NOT uniform**
-- location (str) - country where sample was collected
-- region (str) - continent where sample was collected
-- protein_accession - protein ID
-- sgene_protein (str) - sgene protein
-
-
-Download data from https://www.ncbi.nlm.nih.gov/datasets/coronavirus/genomes/
-
-python3 -m pip install -r requirements.txt
-
-python3 ncbi_dataset_builder.py
+ This script reads: metadata, genome, protein csv files, 
+ joins three datasets together, extracts sgene and
+ saves:
+    - full dataset in csv
+    - sgene in fasta
 """
 
 import sys
 import time
-import traceback
 import json
-import sqlite3
+import traceback
 import pandas as pd
 
-METADATA_JSON = "data_report.jsonl"
-GENOMIC_NUCLEOTIDE_FASTA = "genomic.fna"
-PROTEIN_FASTA = "protein.faa"
-
-SGENE_SYNONIMS = ["spike glycoprotein", "surface glycoprotein",
-                  "spike", "surface"]
-
-DEBUG = False
+METADATA_CSV = "metadata.csv"
+GENOMIC_NUCLEOTIDE_CSV = "genomic.csv"
+PROTEIN_CSV = "protein.csv"
 
 
-class NCBIMetadataParser:
+def cut_sgene(row):
+    begin = int(row['sgene_begin']) - 1
+    end = int(row['sgene_end'])
+    sgene = row['genome'][begin:end]
+    return sgene
 
-    def __init__(self, meta_str):
-        self.meta = json.loads(meta_str)
-        self.accession = self.meta["accession"]
-
-    def find_sgene_annotation(self):
-        """ Returns CDS dict of S gene. Raises Exception if not found
-        """
-
-        for gene in self.meta["annotation"]["genes"]:
-
-            if gene["name"] != "S":
-                continue
-
-            for cds in gene["cds"]:
-
-                # S gene has many names
-                if cds["name"] not in SGENE_SYNONIMS:
-                    continue
-
-                return cds
-
-        raise Exception(f"{self.accession} S Gene not found")
-
-    def find_location(self):
-        try:
-            location = self.meta["location"]["geographicLocation"]
-            region = self.meta["location"]["geographicRegion"]
-            return location, region
-        except KeyError:
-            raise Exception(f"{self.accession} Missing 'location'")
-
-    def find_collection_date(self):
-        try:
-            return self.meta["isolate"]["collectionDate"]
-        except KeyError:
-            raise Exception(f"{self.accession} Missing 'collection date'")
-
-    def is_complete(self):
-        if "completeness" not in self.meta:
-            return False
-
-        return self.meta["completeness"] == "COMPLETE"
-
-    def is_annotated(self):
-        return "annotation" in self.meta
-
-
-def parse_metadata():
-    """ Parses metadata and returns dict
-
-        Returns
-            data (dict) {accession: { protein accession, collection date
-                                    sgene_begin, sgene_end, location, region },
-                        ...}
-
-    """
-
-    print(f"READING METADATA_JSON {METADATA_JSON}")
-    metadata = {}
-
-    with open(METADATA_JSON, "r") as meta_file:
-        for line_json in meta_file:
-            try:
-                parser = NCBIMetadataParser(line_json)
-
-                if not parser.is_annotated():
-                    raise Exception(f"{parser.accession} Not annotated")
-
-                cds = parser.find_sgene_annotation()
-
-                location, region = parser.find_location()
-
-                metadata[parser.accession] = {
-                    "protein_accession": cds["protein"]["accessionVersion"],
-                    "collection_date": parser.find_collection_date(),
-                    "sgene_begin": int(cds["nucleotide"]["range"][0]["begin"]),
-                    "sgene_end": int(cds["nucleotide"]["range"][0]["end"]),
-                    "location": location,
-                    "region": region
-                }
-
-            except Exception as exc:
-                print(f"{exc}")
-
-                if DEBUG:
-                    print(line_json)
-                    traceback.print_exc()
-
-    print(f"Metadata size: {len(metadata)} entries")
-
-    return metadata
-
-
-def parse_genomic_nucleotide_fasta():
-    """ Reads genomic data and returns dict
-
-        Returns:
-            data (dict) - {accession: "FULL GENOME IN FASTA", 
-                           ...}
-    """
-
-    print(f"Reading GENOMIC_NUCLEOTIDE_FASTA {GENOMIC_NUCLEOTIDE_FASTA}")
-    data = {}
-
-    with open(GENOMIC_NUCLEOTIDE_FASTA, "r") as fasta_file:
-
-        sequence = []
-        accession = None
-
-        for line in fasta_file:
-            if '>' in line:
-                if sequence and accession:
-                    data[accession] = "".join(sequence)
-
-                accession = line.split(" ")[0][1:]
-                sequence = []
-            else:
-                sequence.append(line.strip())
-
-    return data
-
-
-def parse_protein_fasta():
-    """ Reads protein data and returns dict
-
-        Returns:
-            data (dict) - {protein_accession: "SGENE PROTEIN IN FASTA", 
-                           ...}
-    """
-
-    print(f"Reading PROTEIN_FASTA {PROTEIN_FASTA}")
-    data = {}
-
-    with open(PROTEIN_FASTA, "r") as fasta_file:
-
-        sequence = []
-        sequence_started = True
-        accession = None
-
-        for line in fasta_file:
-            if '>' in line:
-
-                if sequence and accession:
-                    data[accession] = "".join(sequence)
-
-                sequence = []
-                sequence_started = any(syn in line for syn in SGENE_SYNONIMS)
-                accession = line.split(":", 1)[0][1:]
-            else:
-                if sequence_started:
-                    sequence.append(line.strip())
-    return data
 
 def main():
 
     t0 = time.process_time()
 
-    dataset = parse_metadata()
-    genomic = parse_genomic_nucleotide_fasta()
-    protein = parse_protein_fasta()
+    df = pd.read_csv(METADATA_CSV)
+    print(f"Metadata shape {df.shape}")
 
-    not_found = []  # accession ids not found in genomic dataset
-    not_found_protein = []  # accession ids which protein is not found in protein dataset
-    for accession, meta in dataset.items():
+    dfg = pd.read_csv(GENOMIC_NUCLEOTIDE_CSV)
+    print(f"Genomic shape {dfg.shape}")
 
-        if accession not in genomic:
-            print(f"{accession} not found in genomic data")
-            not_found.append(accession)
-            continue
+    dfp = pd.read_csv(PROTEIN_CSV)
+    print(f"Protein shape {dfg.shape}")
 
-        if meta["protein_accession"] not in protein:
-            print(f"{accession} | Protein {meta['protein_accession']} not found in protein data")
-            not_found_protein.append(accession)
-            continue
+    # join genomic data to metadata
+    df = df.join(dfg.set_index('accession'), on='accession')
 
-        begin = meta["sgene_begin"] - 1  # FASTA count starts from 1
-        end = meta["sgene_end"]
+    # join protein data to metadata
+    df = df.join(dfp.set_index('accession'), on='protein_accession')
+    df.rename(columns={"protein": "sgene_protein",
+                       "protein_desc": "sgene_protein_desc"}, inplace=True)
 
-        dataset[accession]["sgene_nucleotide"] = genomic[accession][begin:end]
-        dataset[accession]["sgene_protein"] = protein[meta["protein_accession"]]
+    df.dropna(inplace=True)
 
-    # remove accessions from dataset not found in genomic dataset
-    for accession in not_found:
-        del dataset[accession]
+    with pd.option_context('mode.chained_assignment', None):
+        df['sgene_nucleotide'] = df.apply(cut_sgene, axis=1)
 
-    # remove accessions from dataset not found in protein dataset
-    for accession in not_found_protein:
-        del dataset[accession]
+    #
+    # Save
+    #
 
-    df = pd.DataFrame.from_dict(dataset, orient='index')
-    df.insert(0, 'accession', df.index)
-    df = df.reset_index(drop=True)
+    # Full dataframe
+    df.to_csv("ncbi_full.csv", index=False)
 
-    print(f"Dataframe shape: {df.shape}")
+    # Sgenes in fasta format
+    with open("ncbi_sgene_full.fasta", "w") as fasta_file:
+        for _, row in df.iterrows():
+            fasta_file.write(f">{row['accession']}\n")
+            fasta_file.write(f"{row['sgene_nucleotide']}\n")
+    
+    #
+    # Exclude sgene nucleotides containing letters
+    #
+    letters = ['R', 'M', "S", "B", "H", "N", "Y", "K", "W", "D", "V"]
+    df_good = df[~df['sgene_nucleotide'].str.contains("|".join(letters))]
 
-    df.to_csv("ncbi.csv", index=False)
+    # Good dataframe
+    df_good.to_csv("ncbi_good.csv", index=False)
+
+    # Good Sgenes in fasta format
+    with open("ncbi_sgene_good.fasta", "w") as fasta_file:
+        for _, row in df_good.iterrows():
+            fasta_file.write(f">{row['accession']}\n")
+            fasta_file.write(f"{row['sgene_nucleotide']}\n")
 
     print(f"Time taken {int(time.process_time() - t0)} sec")
 
