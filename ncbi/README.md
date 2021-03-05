@@ -1,6 +1,8 @@
 Download **(SARS-CoV-2)** data from 
 https://www.ncbi.nlm.nih.gov/datasets/coronavirus/genomes/    
 
+Copy `genomic.fna, protein.faa, data_report.jsonl` to this directory
+
 ```
 python3 -m pip install -r requirements.txt
 
