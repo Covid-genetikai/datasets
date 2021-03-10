@@ -20,6 +20,7 @@ All information
 Only GOOD (sgenes without N, R, ... letters)
 - ncbi_good.csv - only good available information (full genome, sgene, metadata)
 - ncbi_sgene_good.fasta - only good sgene nucleotides in fasta format (do not contain N, R, ... letters)
+- ncbi_sgene_good_unique.fasta - same as ncbi_sgene_good.fasta but contains only unique sgene_nucleotide
 
 Columns:
 

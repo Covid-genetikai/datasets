@@ -78,6 +78,15 @@ def main():
             fasta_file.write(f">{row['accession']}\n")
             fasta_file.write(f"{row['sgene_nucleotide']}\n")
 
+    #
+    # Drop duplicate Sgene nucleotides
+    #
+    df_good_unique = df_good.drop_duplicates(subset=['sgene_nucleotide'])
+    with open("ncbi_sgene_good_unique.fasta", "w") as fasta_file:
+        for _, row in df_good_unique.iterrows():
+            fasta_file.write(f">{row['accession']}\n")
+            fasta_file.write(f"{row['sgene_nucleotide']}\n")
+
     print(f"Time taken {int(time.process_time() - t0)} sec")
 
 
