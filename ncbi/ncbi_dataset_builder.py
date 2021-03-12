@@ -9,6 +9,7 @@
 import sys
 import time
 import json
+import hashlib
 import traceback
 import pandas as pd
 
@@ -81,7 +82,23 @@ def main():
     #
     # Drop duplicate Sgene nucleotides
     #
-    df_good_unique = df_good.drop_duplicates(subset=['sgene_nucleotide'])
+
+    # Groupby by sgene
+    g = df_good.groupby("sgene_nucleotide")
+
+    # Create list of accession names of that sgene
+    df_good_unique = g["accession"].apply(lambda values: "|".join(values)).to_frame()
+    df_good_unique.rename(columns={"accession": "accessions"}, inplace=True)
+
+    # Create new column as count of duplicates
+    df_good_unique["accessions_count"] = g["accession"].count()
+    df_good_unique.reset_index(inplace=True)
+
+    # Create new accession "{count of duplicates}_{sgene hash}"
+    df_good_unique["accession"] = df_good_unique.apply(lambda x: f"{x['accessions_count']}_{hashlib.md5(x['sgene_nucleotide'].encode()).hexdigest()}", axis=1) 
+
+    df_good_unique.to_csv("ncbi_sgene_good_unique.csv", index=False)
+
     with open("ncbi_sgene_good_unique.fasta", "w") as fasta_file:
         for _, row in df_good_unique.iterrows():
             fasta_file.write(f">{row['accession']}\n")
