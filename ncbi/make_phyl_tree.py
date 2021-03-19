@@ -3,6 +3,9 @@ from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
 from Bio import AlignIO
 
+import sys
+sys.setrecursionlimit(10000)
+
 import time
 from pathlib import Path
 
@@ -29,10 +32,13 @@ def main():
     # Show tree image
     Phylo.draw(tree)
 
-
 if __name__ == "__main__":
+    
     t0 = time.process_time()
 
-    main()
-
-    print(f"Time taken {int(time.process_time() - t0)} sec")
+    try:
+        main()
+    except:
+        raise
+    finally:
+        print(f"Time taken {int(time.process_time() - t0)} sec")
