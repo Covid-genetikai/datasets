@@ -19,6 +19,7 @@ tmdbsimple = "*"
 ipykernel = "*"
 diff-match-patch = "*"
 nltk = "*"
+biopython = "*"
 
 [requires]
 python_version = "3.8"
