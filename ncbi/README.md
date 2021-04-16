@@ -62,6 +62,7 @@ dot -Txdot_json -o tree.json tree.dot
 
 # Convert tree.dot to svg (works also with png, jpg)
 dot -Tsvg tree.dot -o tree.svg
+dot -Tjpg tree.dot -o tree.jpg
 ```
 
 All information
