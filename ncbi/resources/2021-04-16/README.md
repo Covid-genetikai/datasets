@@ -8,3 +8,4 @@ Processed:
 - pairs.csv - parent:child accession pairs 
 - ncbi_sgene_good_unique.csv - sgene, accession
 - good_unique.aln - aligned sgenes
+- good_unique.csv - aligned sgenes

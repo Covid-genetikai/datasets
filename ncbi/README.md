@@ -23,7 +23,14 @@ muscle -in ncbi_sgene_good_unique_100.fasta -clwout ncbi_sgene_good_unique_100.a
 
 ```
 # align all sequences
-muscle -in ncbi_sgene_good_unique.fasta -clwout ncbi_sgene_good_unique.aln
+muscle -in ncbi_sgene_good_unique.fasta -clwout ncbi_sgene_good_unique_aligned.aln
+```
+
+Output used in next step: `ncbi_sgene_good_unique_aligned.aln`
+
+```
+# convert aligned genes into csv (filename is hardcoded in script)
+python3 fasta_to_csv.py
 ```
 
 Output used in next step: `ncbi_sgene_good_unique.aln`
