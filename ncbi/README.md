@@ -32,13 +32,22 @@ Output used in next step: `ncbi_sgene_good_unique_aligned.aln`
 # convert aligned genes into csv (filename is hardcoded in script)
 python3 fasta_to_csv.py
 ```
+------------------------------------
 
-Output used in next step: `ncbi_sgene_good_unique.aln`
+5-notebook
+Output used in next step: `ncbi_sgene_good_unique_aligned_cleaned.fasta`
 
 ```
-# build tree (TO Do UPDATE)
-https://github.com/stamatak/standard-RAxML
-./standard-RAxML/raxmlHPC-PTHREADS-SSE3 -T 8 -f a -x 860647 -p 860647 -N 100 -m GTRGAMMA -O -n sgene_good_unique.tre -s $(PWD)/data/sgene_good_unique_modified.aln -w $(PWD)
+# build tree https://github.com/stamatak/standard-RAxML
+
+git clone https://github.com/stamatak/standard-RAxML.git
+sudo apt update
+sudo apt install make gcc
+make -f Makefile.SSE3.PTHREADS.gcc
+
+scp ncbi_sgene_good_unique_aligned_cleaned.fasta ubuntu@ec2-34-242-87-237.eu-west-1.compute.amazonaws.com:/home/ubuntu/
+
+./raxmlHPC-PTHREADS-SSE3 -T 8 -f a -x 860647 -p 860647 -N 100 -m GTRGAMMA -O -n sgene_good_unique.tre -s /home/ubuntu/ncbi_sgene_good_unique_aligned_cleaned.fasta -w /home/ubuntu
 ```
 
 Output used in next step: `RAxML_bestTree.sgene_good_unique.tre`
