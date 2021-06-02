@@ -20,6 +20,7 @@ ipykernel = "*"
 diff-match-patch = "*"
 nltk = "*"
 biopython = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.8"
